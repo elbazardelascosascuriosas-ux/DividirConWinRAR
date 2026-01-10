@@ -188,4 +188,20 @@ for ($i = 0; $i -lt $archivos.Count; $i++) {
     }
 }
 
-# ... (el final igual: completar barra global y mensaje)
+# Finalizar
+$progressGlobal.Value = $archivos.Count
+$lblGlobal.Text = "¡Completado!"
+Start-Sleep -Milliseconds 800
+$formProgreso.Close()
+
+# === 6. Resultado final ===
+$mensaje = "División completada`n`nArchivos procesados: $($archivos.Count)`nÉxitos: $exitosos`nFallidos: $fallidos"
+
+if ($fallidos -gt 0) {
+    $mensaje += "`n`nErrores:`n$detallesError"
+    $icono = "Error"
+} else {
+    $icono = "Information"
+}
+
+[System.Windows.Forms.MessageBox]::Show($mensaje, "Resultado final", "OK", $icono)
