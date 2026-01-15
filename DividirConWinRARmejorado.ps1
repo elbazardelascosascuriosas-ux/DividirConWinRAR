@@ -23,11 +23,10 @@ $script:Config = @{
         "${env:ProgramFiles(x86)}\WinRAR\winrar.exe"
     )
     EncodingCodePage       = 850
-    LogFileName            = "WinRAR_Split_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
     MinPartSizeMB          = 5
-    DefaultPartSize        = "100m"
-    WindowStyle            = "Normal"
-    SimulatedProgressSpeed = 120           # ajusta según tiempo típico de tus archivos
+    DefaultPartSize        = "800m"           # ← Cambiado a 800m
+    WindowStyle            = "Hidden"
+    SimulatedProgressSpeed = 120
 }
 
 # ==================== FUNCIONES AUXILIARES ====================
@@ -41,9 +40,7 @@ function Write-Log {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $Message"
     
-    $logPath = Join-Path $PSScriptRoot $script:Config.LogFileName
-    Add-Content -Path $logPath -Value $logEntry -Encoding UTF8 -ErrorAction SilentlyContinue
-    
+    # Solo mostramos en consola (no se escribe en archivo)
     if ($Level -eq 'Error')      { Write-Host $logEntry -ForegroundColor Red }
     elseif ($Level -eq 'Warning') { Write-Host $logEntry -ForegroundColor Yellow }
     elseif ($Level -eq 'Success') { Write-Host $logEntry -ForegroundColor Green }
@@ -98,7 +95,7 @@ function Show-SizeInputForm {
     $label = New-Object System.Windows.Forms.Label -Property @{
         Location = New-Object System.Drawing.Point(20,20)
         Size     = New-Object System.Drawing.Size(410,70)
-        Text     = "Tamaño de cada volumen (ejemplos válidos):`n100m   500m   1g   4g   7500m`n`nMínimo recomendado: $($script:Config.MinPartSizeMB) MB"
+        Text     = "Tamaño de cada volumen (ejemplos válidos):`n800m   1500m   2g   4g   7500m`n`nMínimo recomendado: $($script:Config.MinPartSizeMB) MB"
     }
     
     $tb = New-Object System.Windows.Forms.TextBox -Property @{
@@ -134,7 +131,7 @@ function Show-SizeInputForm {
         }
         else {
             [System.Windows.Forms.MessageBox]::Show(
-                "Formato inválido o tamaño demasiado pequeño.`nEjemplos: 100m, 1g, 4g, 7500m`nMínimo: $($script:Config.MinPartSizeMB)MB",
+                "Formato inválido o tamaño demasiado pequeño.`nEjemplos: 800m, 1500m, 2g, 4g, 7500m`nMínimo: $($script:Config.MinPartSizeMB)MB",
                 "Tamaño incorrecto",
                 [System.Windows.Forms.MessageBoxButtons]::OK,
                 [System.Windows.Forms.MessageBoxIcon]::Error
@@ -219,10 +216,10 @@ function Split-FileWithWinRARGUI {
         FileName               = $WinRarExe
         Arguments              = $args
         WorkingDirectory       = $dir
-        UseShellExecute        = $false
+        UseShellExecute        = $true
         RedirectStandardOutput = $false
         RedirectStandardError  = $false
-        CreateNoWindow         = $false
+        CreateNoWindow         = $true
         WindowStyle            = $script:Config.WindowStyle
     }
     
@@ -271,7 +268,7 @@ function Update-Progress {
     param($UI, $index, $total, $file, $percent, $status)
     
     $UI.LabelGlobal.Text      = if ($total -eq 1) { "Procesando archivo..." } else { "Archivo $($index+1) de $total" }
-    $UI.ProgressGlobal.Value  = if ($total -eq 1) { 0 } else { $index }  # ← Oculta avance global si solo hay 1 archivo
+    $UI.ProgressGlobal.Value  = if ($total -eq 1) { 0 } else { $index }
     $UI.LabelArchivo.Text     = $file
     $UI.ProgressArchivo.Value = $percent
     $UI.LabelPorcentaje.Text  = "$percent%"
