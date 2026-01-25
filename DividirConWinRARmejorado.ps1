@@ -2,7 +2,7 @@
 .SYNOPSIS
     Dividir archivos grandes en partes usando WinRAR (GUI) con progreso simulado suave + tiempo restante estimado
 .VERSION
-    2.5 - Tiempo restante estimado + valores ajustados SSD rápido 2026
+    2.6 - Agregado -ep para archivos sin carpeta intermedia + limpieza de nombre base
 #>
 
 #Requires -Version 5.1
@@ -205,9 +205,15 @@ function Split-FileWithWinRARGUI {
     $fileName   = [IO.Path]::GetFileName($FilePath)
     $dir        = [IO.Path]::GetDirectoryName($FilePath)
     $baseName   = [IO.Path]::GetFileNameWithoutExtension($FilePath)
-    $outputRar  = Join-Path $dir "$baseName"
     
-    if (-not (Test-ShouldOverwrite $outputRar)) {
+    # Limpieza opcional del nombre base (recomendado para nombres largos o con caracteres raros)
+    $cleanBase  = $baseName -replace '[^ \w\.-]', '_' -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+    $outputBase = Join-Path $dir $cleanBase
+    
+    # Si prefieres el nombre original sin limpiar, comenta las 3 líneas anteriores y usa:
+    # $outputBase = Join-Path $dir $baseName
+    
+    if (-not (Test-ShouldOverwrite "$outputBase.part1.rar")) {
         Write-Log "Omitido por usuario: $fileName" -Level Warning
         return @{ Success = $false; Skipped = $true; Message = "Omitido por usuario" }
     }
@@ -216,12 +222,14 @@ function Split-FileWithWinRARGUI {
         "a"
         "-v$PartSize"
         "-m5"
-        "-s"
-        "-ma5"
+        "-s"           # Archivo sólido (importante para compresión eficiente)
+        "-ma5"         # Formato RAR5
+        "-ep"          # <--- CLAVE: excluye rutas de carpeta, guarda solo el nombre del archivo
         "-dh"
         "-t"
-        "`"$outputRar`""
-        "`"$FilePath`""
+        "--"           # Separa switches de paths
+        "`"$outputBase`""  # Base sin .rar
+        "`"$FilePath`""    # Archivo a comprimir
     ) -join " "
     
     $psi = New-Object System.Diagnostics.ProcessStartInfo -Property @{
@@ -284,7 +292,7 @@ function Split-FileWithWinRARGUI {
     Update-Progress $UI $Index $Total $fileName 100 "Finalizado ($($sw.Elapsed.ToString('mm\:ss')))"
     
     if ($exitCode -eq 0) {
-        Write-Log "ÉXITO: $fileName → $outputRar ($($sw.Elapsed.ToString('mm\:ss')))" -Level Success
+        Write-Log "ÉXITO: $fileName → $outputBase.part*.rar ($($sw.Elapsed.ToString('mm\:ss')))" -Level Success
         return @{ Success = $true; Duration = $sw.Elapsed }
     }
     else {
