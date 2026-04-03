@@ -123,14 +123,11 @@ $cboNivel.Location = New-Object System.Drawing.Point(10, 30)
 $cboNivel.Size = New-Object System.Drawing.Size(400, 28)
 $cboNivel.DropDownStyle = "DropDownList"
 $cboNivel.Items.AddRange(@(
-    "0 - Sin compresion (Store) - mas rapido, archivos mas grandes",
-    "1 - Compresion mas rapida",
-    "3 - Compresion rapida",
-    "5 - Normal (recomendado)",
-    "7 - Buena compresion",
-    "9 - Maxima compresion - mas lento, archivos mas pequenos"
+    "0 - Sin compresion (Store) - ideal para video",
+    "1 - Compresion rapida",
+    "5 - Normal"
 ))
-$cboNivel.SelectedIndex = 3
+$cboNivel.SelectedIndex = 0
 $grpCompresion.Controls.Add($cboNivel)
 
 $btnOk = New-Object System.Windows.Forms.Button
